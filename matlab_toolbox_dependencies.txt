@@ -1,0 +1,12 @@
+% MATLAB TOOLBOX DEPENDENCIES
+
+%POLYFUN
+-inpolygon.m
+-convhull.m
+% For stripping wire artifacts from outside of the skull
+
+
+
+%%%% LEFT OUT/ UNFINISHED COMPONENTS
+Yang_GUI
+Surface Projection
