@@ -1,0 +1,67 @@
+function denSTATS = MRIdbscan(points,trode_radius,min_neighbors)
+%a function to perform a brute force scan and calculate density stats  algorithm
+%density stats include (denSTATS)
+%nearestVerts - cell containing the neighboring points (i.e. those within the trode_radius
+%distanceVerts - cell containing the distances to each neighbor point
+%neighborVectN - a summation of all the normalized direction vectors to each neighbor
+%neighborVectM - the magnitude in euclidian distance of the summed norm. vector
+%neighborVectA - the angle ... (WIP)
+%neybors - the number of neighbors within the trode_radius
+%
+%INPUT:
+%points - the mesh of [Nx3] coordinates pertaining to artifact voxels
+%trode_radius - the radius of the sphere used as the boundary for the
+%               density scan (in euclidian distance)
+%
+% MRIdbscan.m
+%
+% Original Author: Walter Hinds
+%    $Date: 01/01/2017 00:04:12 $
+%
+% Copyright Â© 2017 Drexel University
+%
+% Terms and conditions for use, reproduction, distribution and contribution
+% are found in the 'ACOREL Software License Agreement' contained
+% in the file 'LICENSE' found in the ACOREL distribution.
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if ~exist('min_neighbors','var');min_neighbors=1;end %at least one neighbor by default
+                                                        
+denSTATS=struct('nearestVerts',{},'distanceVerts',{}...
+    ,'neighborVectN',[],'neighborVectM',[],'neighborVectA',[],'neybors',[],'dens',[]);
+
+for vert=1:size(points,1)
+                                                        
+    verticesList=[];%indexes of the neighboring points within the trode_radius
+    facesList=[];%facesList - not used...yet
+    [verticesList, ~] = getVerticesAndFacesInSphere2(points, vert, trode_radius);
+    denSTATS(vert).nearestVerts=verticesList;
+    %%%%%%%%%%%
+    %in case there are no neighbors within MRI radius (or not enough)
+    if size(verticesList,1)<min_neighbors
+        denSTATS(vert).distanceVerts=[];denSTATS(vert).neighborVectN=[0 0 0];
+        denSTATS(vert).neighborVectM=inf;denSTATS(vert).neighborVectA=0;
+        denSTATS(vert).neybors=0;
+        denSTATS(vert).dens=0;
+        continue;
+    end
+    %%%%%%%%%%%%%%%
+    % IF at least GREATER THAN min neighbors
+    %%%%%%%%%%%%%
+    % 1. Number of neighbors
+    denSTATS(vert).neybors=length(verticesList);
+    %dist4rmO=[dist4rmO,isVertexInRadius2(vertex, origin, radius)];
+    %then calculate neybor distances
+    % 2. List magnitude of all vectors to neighbors
+    distanceList=eud([points(verticesList,:)],[points(vert,:)]);
+    denSTATS(vert).distanceVerts=distanceList;
+    % 3. Sum all normal vectors to neighbors
+    denSTATS(vert).neighborVectN=...
+        sum(bsxfun(@rdivide,bsxfun(@minus,points(verticesList,:),points(vert,:)),distanceList));
+    % 4. Magnitude of avergae neighbor vector
+    denSTATS(vert).neighborVectM=eud([0 0 0],denSTATS(vert).neighborVectN);
+    % 5. Distance density?
+    denSTATS(vert).dens=median(distanceList)/length(verticesList);
+    %neighborVectA(end+1) = atan2(norm(cross(neighborVectN(end,:),[0 0 0])),dot(neighborVectN(end,:),[0 0 0]));
+end %for loop end
+end %function end statement
